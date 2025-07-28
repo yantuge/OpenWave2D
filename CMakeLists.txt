@@ -34,6 +34,9 @@ set(CXX_SOURCES
     src/Recorder.cpp
     src/Writer.cpp
     src/Dispatcher.cpp
+    src/solvers/RK4Integrator.cpp
+    src/solvers/CPMLIntegrator.cpp
+    src/solvers/TimeIntegratorFactory.cpp
     src/main.cpp
 )
 
@@ -44,19 +47,19 @@ add_executable(openwave2d ${CXX_SOURCES})
 target_link_libraries(openwave2d PRIVATE seismic_kernels)
 
 # Include Fortran modules
-target_include_directories(SeismicHybrid PRIVATE ${CMAKE_BINARY_DIR}/fortran_modules)
+target_include_directories(openwave2d PRIVATE ${CMAKE_BINARY_DIR}/fortran_modules)
 
 # Try to find nlohmann/json
 find_package(nlohmann_json QUIET)
 if(nlohmann_json_FOUND)
-    target_link_libraries(SeismicHybrid PRIVATE nlohmann_json::nlohmann_json)
+    target_link_libraries(openwave2d PRIVATE nlohmann_json::nlohmann_json)
 else()
     # If not found, assume it's header-only and available in system include paths
     message(STATUS "nlohmann/json not found via find_package, assuming header-only library")
 endif()
 
 # Install target
-install(TARGETS SeismicHybrid DESTINATION bin)
+install(TARGETS openwave2d DESTINATION bin)
 install(TARGETS seismic_kernels DESTINATION lib)
 
 # Create output directories

@@ -152,8 +152,8 @@ contains
                                   d_x, d_x_half, d_y, d_y_half, &
                                   k_x, k_x_half, k_y, k_y_half, &
                                   alpha_x, alpha_x_half, alpha_y, alpha_y_half, &
-                                  a_x, a_x_half, a_y, a_y_half, &
-                                  b_x, b_x_half, b_y, b_y_half, &
+                                  a_x_rk4, a_x_half_rk4, a_y_rk4, a_y_half_rk4, &
+                                  b_x_rk4, b_x_half_rk4, b_y_rk4, b_y_half_rk4, &
                                   memory_dvx_dx, memory_dvx_dy, &
                                   memory_dvy_dx, memory_dvy_dy, &
                                   memory_dsigmaxx_dx, memory_dsigmayy_dy, &
@@ -178,8 +178,10 @@ contains
         real(c_double), intent(in) :: d_x(-4:nx+4), d_x_half(-4:nx+4), d_y(-4:ny+4), d_y_half(-4:ny+4)
         real(c_double), intent(in) :: k_x(-4:nx+4), k_x_half(-4:nx+4), k_y(-4:ny+4), k_y_half(-4:ny+4)
         real(c_double), intent(in) :: alpha_x(-4:nx+4), alpha_x_half(-4:nx+4), alpha_y(-4:ny+4), alpha_y_half(-4:ny+4)
-        real(c_double), intent(in) :: a_x(4,-4:nx+4), a_x_half(4,-4:nx+4), a_y(4,-4:ny+4), a_y_half(4,-4:ny+4)
-        real(c_double), intent(in) :: b_x(4,-4:nx+4), b_x_half(4,-4:nx+4), b_y(4,-4:ny+4), b_y_half(4,-4:ny+4)
+        
+        ! ADE-PML RK4 coefficients (2D arrays: [4 substeps][spatial points])
+        real(c_double), intent(in) :: a_x_rk4(4,-4:nx+4), a_x_half_rk4(4,-4:nx+4), a_y_rk4(4,-4:ny+4), a_y_half_rk4(4,-4:ny+4)
+        real(c_double), intent(in) :: b_x_rk4(4,-4:nx+4), b_x_half_rk4(4,-4:nx+4), b_y_rk4(4,-4:ny+4), b_y_half_rk4(4,-4:ny+4)
         
         ! PML memory variables
         real(c_double), intent(inout) :: memory_dvx_dx(-4:nx+4,-4:ny+4), memory_dvx_dy(-4:nx+4,-4:ny+4)
@@ -226,11 +228,11 @@ contains
                                c3*(vy(i,j+3) - vy(i,j-2)) + &
                                c4*(vy(i,j+4) - vy(i,j-3))) / deltay
                 
-                ! ADE-PML memory variable updates
-                memory_dvx_dx(i,j) = b_x_half(rk_substep,i) * memory_dvx_dx(i,j) + &
-                                    a_x_half(rk_substep,i) * value_dvx_dx
-                memory_dvy_dy(i,j) = b_y(rk_substep,j) * memory_dvy_dy(i,j) + &
-                                    a_y(rk_substep,j) * value_dvy_dy
+                ! ADE-PML memory variable updates using RK4-specific coefficients
+                memory_dvx_dx(i,j) = b_x_half_rk4(rk_substep,i) * memory_dvx_dx(i,j) + &
+                                    a_x_half_rk4(rk_substep,i) * value_dvx_dx
+                memory_dvy_dy(i,j) = b_y_rk4(rk_substep,j) * memory_dvy_dy(i,j) + &
+                                    a_y_rk4(rk_substep,j) * value_dvy_dy
                 
                 value_dvx_dx = value_dvx_dx / k_x_half(i) + memory_dvx_dx(i,j)
                 value_dvy_dy = value_dvy_dy / k_y(j) + memory_dvy_dy(i,j)
@@ -261,11 +263,11 @@ contains
                                c3*(vx(i,j+3) - vx(i,j-2)) + &
                                c4*(vx(i,j+4) - vx(i,j-3))) / deltay
                 
-                ! ADE-PML memory variable updates
-                memory_dvy_dx(i,j) = b_x(rk_substep,i) * memory_dvy_dx(i,j) + &
-                                    a_x(rk_substep,i) * value_dvy_dx
-                memory_dvx_dy(i,j) = b_y_half(rk_substep,j) * memory_dvx_dy(i,j) + &
-                                    a_y_half(rk_substep,j) * value_dvx_dy
+                ! ADE-PML memory variable updates using RK4-specific coefficients
+                memory_dvy_dx(i,j) = b_x_rk4(rk_substep,i) * memory_dvy_dx(i,j) + &
+                                    a_x_rk4(rk_substep,i) * value_dvy_dx
+                memory_dvx_dy(i,j) = b_y_half_rk4(rk_substep,j) * memory_dvx_dy(i,j) + &
+                                    a_y_half_rk4(rk_substep,j) * value_dvx_dy
                 
                 value_dvy_dx = value_dvy_dx / k_x(i) + memory_dvy_dx(i,j)
                 value_dvx_dy = value_dvx_dy / k_y_half(j) + memory_dvx_dy(i,j)
@@ -297,11 +299,11 @@ contains
                                     c3*(sigmaxy(i,j+2) - sigmaxy(i,j-3)) + &
                                     c4*(sigmaxy(i,j+3) - sigmaxy(i,j-4))) / deltay
                 
-                ! ADE-PML memory variable updates
-                memory_dsigmaxx_dx(i,j) = b_x(rk_substep,i) * memory_dsigmaxx_dx(i,j) + &
-                                         a_x(rk_substep,i) * value_dsigmaxx_dx
-                memory_dsigmaxy_dy(i,j) = b_y(rk_substep,j) * memory_dsigmaxy_dy(i,j) + &
-                                         a_y(rk_substep,j) * value_dsigmaxy_dy
+                ! ADE-PML memory variable updates using RK4-specific coefficients
+                memory_dsigmaxx_dx(i,j) = b_x_rk4(rk_substep,i) * memory_dsigmaxx_dx(i,j) + &
+                                         a_x_rk4(rk_substep,i) * value_dsigmaxx_dx
+                memory_dsigmaxy_dy(i,j) = b_y_rk4(rk_substep,j) * memory_dsigmaxy_dy(i,j) + &
+                                         a_y_rk4(rk_substep,j) * value_dsigmaxy_dy
                 
                 value_dsigmaxx_dx = value_dsigmaxx_dx / k_x(i) + memory_dsigmaxx_dx(i,j)
                 value_dsigmaxy_dy = value_dsigmaxy_dy / k_y(j) + memory_dsigmaxy_dy(i,j)
@@ -326,11 +328,11 @@ contains
                                     c3*(sigmayy(i,j+3) - sigmayy(i,j-2)) + &
                                     c4*(sigmayy(i,j+4) - sigmayy(i,j-3))) / deltay
                 
-                ! ADE-PML memory variable updates
-                memory_dsigmaxy_dx(i,j) = b_x_half(rk_substep,i) * memory_dsigmaxy_dx(i,j) + &
-                                          a_x_half(rk_substep,i) * value_dsigmaxy_dx
-                memory_dsigmayy_dy(i,j) = b_y_half(rk_substep,j) * memory_dsigmayy_dy(i,j) + &
-                                          a_y_half(rk_substep,j) * value_dsigmayy_dy
+                ! ADE-PML memory variable updates using RK4-specific coefficients
+                memory_dsigmaxy_dx(i,j) = b_x_half_rk4(rk_substep,i) * memory_dsigmaxy_dx(i,j) + &
+                                          a_x_half_rk4(rk_substep,i) * value_dsigmaxy_dx
+                memory_dsigmayy_dy(i,j) = b_y_half_rk4(rk_substep,j) * memory_dsigmayy_dy(i,j) + &
+                                          a_y_half_rk4(rk_substep,j) * value_dsigmayy_dy
                 
                 value_dsigmaxy_dx = value_dsigmaxy_dx / k_x_half(i) + memory_dsigmaxy_dx(i,j)
                 value_dsigmayy_dy = value_dsigmayy_dy / k_y_half(j) + memory_dsigmayy_dy(i,j)

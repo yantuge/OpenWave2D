@@ -24,8 +24,9 @@ public:
     /**
      * @brief Construct grid from configuration
      * @param config Grid configuration parameters
+     * @param use_extended_grid Whether to use extended grid for ADE-PML
      */
-    explicit Grid(const GridConfig& config);
+    explicit Grid(const GridConfig& config, bool use_extended_grid = false);
 
     /// Destructor
     ~Grid() = default;
@@ -35,13 +36,78 @@ public:
     Index ny() const { return m_ny; }
     Real deltax() const { return m_deltax; }
     Real deltay() const { return m_deltay; }
-
-    // Velocity field accessors (column-major: j * nx + i)
-    Real& vx(Index i, Index j) { return m_vx[j * m_nx + i]; }
-    const Real& vx(Index i, Index j) const { return m_vx[j * m_nx + i]; }
     
-    Real& vy(Index i, Index j) { return m_vy[j * m_nx + i]; }
-    const Real& vy(Index i, Index j) const { return m_vy[j * m_nx + i]; }
+    // For Fortran kernels: get the grid dimensions that should be passed to Fortran
+    // For ADE-PML: nx (because Fortran expects (-4:nx+4) and we have nx+9 total)
+    // For CPML: nx (regular grid)
+    Index fortran_nx() const { 
+        return m_nx; 
+    }
+    Index fortran_ny() const { 
+        return m_ny; 
+    }
+
+    // Velocity field accessors (automatically choose correct grid size)
+    Real& vx(Index i, Index j) { 
+        if (m_use_extended_grid) {
+            const Index i_ext = i + 4;  // Convert from regular grid to extended grid
+            const Index j_ext = j + 4;
+            return m_vx[j_ext * m_nx_extended + i_ext]; 
+        } else {
+            return m_vx[j * m_nx + i]; 
+        }
+    }
+    const Real& vx(Index i, Index j) const { 
+        if (m_use_extended_grid) {
+            const Index i_ext = i + 4;
+            const Index j_ext = j + 4;
+            return m_vx[j_ext * m_nx_extended + i_ext]; 
+        } else {
+            return m_vx[j * m_nx + i]; 
+        }
+    }
+    
+    Real& vy(Index i, Index j) { 
+        if (m_use_extended_grid) {
+            const Index i_ext = i + 4;
+            const Index j_ext = j + 4;
+            return m_vy[j_ext * m_nx_extended + i_ext]; 
+        } else {
+            return m_vy[j * m_nx + i]; 
+        }
+    }
+    const Real& vy(Index i, Index j) const { 
+        if (m_use_extended_grid) {
+            const Index i_ext = i + 4;
+            const Index j_ext = j + 4;
+            return m_vy[j_ext * m_nx_extended + i_ext]; 
+        } else {
+            return m_vy[j * m_nx + i]; 
+        }
+    }
+    
+    // Velocity field accessors for extended grid (ADE-PML with ghost points)
+    Real& vx_extended(Index i, Index j) { 
+        const Index i_ext = i + 4;  // Convert from regular grid to extended grid
+        const Index j_ext = j + 4;
+        return m_vx[j_ext * m_nx_extended + i_ext]; 
+    }
+    const Real& vx_extended(Index i, Index j) const { 
+        const Index i_ext = i + 4;
+        const Index j_ext = j + 4;
+        return m_vx[j_ext * m_nx_extended + i_ext]; 
+    }
+    
+    Real& vy_extended(Index i, Index j) { 
+        const Index i_ext = i + 4;
+        const Index j_ext = j + 4;
+        return m_vy[j_ext * m_nx_extended + i_ext]; 
+    }
+    const Real& vy_extended(Index i, Index j) const { 
+        const Index i_ext = i + 4;
+        const Index j_ext = j + 4;
+        return m_vy[j_ext * m_nx_extended + i_ext]; 
+    }
 
     // Stress field accessors
     Real& sigmaxx(Index i, Index j) { return m_sigmaxx[j * m_nx + i]; }
@@ -113,6 +179,7 @@ public:
     Real& alpha_y_half(Index j) { return m_alpha_y_half[j]; }
     const Real& alpha_y_half(Index j) const { return m_alpha_y_half[j]; }
 
+    // For CPML (simple 1D access)
     Real& a_x(Index i) { return m_a_x[i]; }
     const Real& a_x(Index i) const { return m_a_x[i]; }
     
@@ -136,6 +203,31 @@ public:
     
     Real& b_y_half(Index j) { return m_b_y_half[j]; }
     const Real& b_y_half(Index j) const { return m_b_y_half[j]; }
+
+    // For ADE-PML (2D access: [rk_substep][spatial_index])
+    Real& a_x_rk4(Index rk_substep, Index i) { return m_a_x_rk4[rk_substep * m_nx_extended + i]; }
+    const Real& a_x_rk4(Index rk_substep, Index i) const { return m_a_x_rk4[rk_substep * m_nx_extended + i]; }
+    
+    Real& a_x_half_rk4(Index rk_substep, Index i) { return m_a_x_half_rk4[rk_substep * m_nx_extended + i]; }
+    const Real& a_x_half_rk4(Index rk_substep, Index i) const { return m_a_x_half_rk4[rk_substep * m_nx_extended + i]; }
+    
+    Real& a_y_rk4(Index rk_substep, Index j) { return m_a_y_rk4[rk_substep * m_ny_extended + j]; }
+    const Real& a_y_rk4(Index rk_substep, Index j) const { return m_a_y_rk4[rk_substep * m_ny_extended + j]; }
+    
+    Real& a_y_half_rk4(Index rk_substep, Index j) { return m_a_y_half_rk4[rk_substep * m_ny_extended + j]; }
+    const Real& a_y_half_rk4(Index rk_substep, Index j) const { return m_a_y_half_rk4[rk_substep * m_ny_extended + j]; }
+
+    Real& b_x_rk4(Index rk_substep, Index i) { return m_b_x_rk4[rk_substep * m_nx_extended + i]; }
+    const Real& b_x_rk4(Index rk_substep, Index i) const { return m_b_x_rk4[rk_substep * m_nx_extended + i]; }
+    
+    Real& b_x_half_rk4(Index rk_substep, Index i) { return m_b_x_half_rk4[rk_substep * m_nx_extended + i]; }
+    const Real& b_x_half_rk4(Index rk_substep, Index i) const { return m_b_x_half_rk4[rk_substep * m_nx_extended + i]; }
+    
+    Real& b_y_rk4(Index rk_substep, Index j) { return m_b_y_rk4[rk_substep * m_ny_extended + j]; }
+    const Real& b_y_rk4(Index rk_substep, Index j) const { return m_b_y_rk4[rk_substep * m_ny_extended + j]; }
+    
+    Real& b_y_half_rk4(Index rk_substep, Index j) { return m_b_y_half_rk4[rk_substep * m_ny_extended + j]; }
+    const Real& b_y_half_rk4(Index rk_substep, Index j) const { return m_b_y_half_rk4[rk_substep * m_ny_extended + j]; }
 
     // Memory variables for PML (2D arrays)
     Real& memory_dvx_dx(Index i, Index j) { return m_memory_dvx_dx[j * m_nx + i]; }
@@ -205,6 +297,17 @@ public:
     Real* get_b_y_ptr() { return m_b_y.data(); }
     Real* get_b_y_half_ptr() { return m_b_y_half.data(); }
     
+    // ADE-PML RK4 specific accessors (2D arrays stored as 1D)
+    Real* get_a_x_rk4_ptr() { return m_a_x_rk4.data(); }
+    Real* get_a_x_half_rk4_ptr() { return m_a_x_half_rk4.data(); }
+    Real* get_a_y_rk4_ptr() { return m_a_y_rk4.data(); }
+    Real* get_a_y_half_rk4_ptr() { return m_a_y_half_rk4.data(); }
+    
+    Real* get_b_x_rk4_ptr() { return m_b_x_rk4.data(); }
+    Real* get_b_x_half_rk4_ptr() { return m_b_x_half_rk4.data(); }
+    Real* get_b_y_rk4_ptr() { return m_b_y_rk4.data(); }
+    Real* get_b_y_half_rk4_ptr() { return m_b_y_half_rk4.data(); }
+    
     Real* get_memory_dvx_dx_ptr() { return m_memory_dvx_dx.data(); }
     Real* get_memory_dvx_dy_ptr() { return m_memory_dvx_dy.data(); }
     Real* get_memory_dvy_dx_ptr() { return m_memory_dvy_dx.data(); }
@@ -236,6 +339,10 @@ private:
     Index m_nx, m_ny;
     Real m_deltax, m_deltay;
     
+    // Extended grid dimensions for ADE-PML (includes ghost points)
+    Index m_nx_extended, m_ny_extended;
+    bool m_use_extended_grid;  // Flag to determine which grid to use
+    
     // Wave field arrays (stored as 1D vectors in column-major order)
     std::vector<Real> m_vx, m_vy;
     std::vector<Real> m_sigmaxx, m_sigmayy, m_sigmaxy;
@@ -249,12 +356,16 @@ private:
     std::vector<Real> m_dvx, m_dvy;
     std::vector<Real> m_dsigmaxx, m_dsigmayy, m_dsigmaxy;
     
-    // PML profile arrays (1D)
+    // PML profile arrays (1D) - for CPML
     std::vector<Real> m_d_x, m_d_x_half, m_d_y, m_d_y_half;
     std::vector<Real> m_k_x, m_k_x_half, m_k_y, m_k_y_half;
     std::vector<Real> m_alpha_x, m_alpha_x_half, m_alpha_y, m_alpha_y_half;
     std::vector<Real> m_a_x, m_a_x_half, m_a_y, m_a_y_half;
     std::vector<Real> m_b_x, m_b_x_half, m_b_y, m_b_y_half;
+    
+    // ADE-PML RK4 coefficient arrays (2D: [4 substeps][spatial points])
+    std::vector<Real> m_a_x_rk4, m_a_x_half_rk4, m_a_y_rk4, m_a_y_half_rk4;
+    std::vector<Real> m_b_x_rk4, m_b_x_half_rk4, m_b_y_rk4, m_b_y_half_rk4;
     
     // PML memory variables (2D)
     std::vector<Real> m_memory_dvx_dx, m_memory_dvx_dy;
