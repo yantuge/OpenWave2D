@@ -1,4 +1,4 @@
-# SeismicHybrid - 2D Elastic Wave Simulation
+# OpenWave2D - 2D Elastic Wave Simulation
 
 A high-performance 2D seismic wave simulation framework using C++/Fortran hybrid architecture with PML absorbing boundaries.
 
@@ -47,7 +47,6 @@ SeismicHybrid/
 ### Building
 
 ```bash
-cd SeismicHybrid
 mkdir build && cd build
 cmake ..
 make -j$(nproc)
@@ -70,7 +69,7 @@ pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-n
 ### Basic Usage
 
 ```bash
-./SeismicHybrid ../config/elastic_homogeneous.json
+./OpenWave2D ../config/elastic_homogeneous.json
 ```
 
 ### Configuration
