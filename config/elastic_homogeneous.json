@@ -1,0 +1,54 @@
+{
+  "grid": {
+    "nx": 241,
+    "ny": 241,
+    "deltax": 10.0,
+    "deltay": 10.0
+  },
+  "model": {
+    "type": "homogeneous",
+    "vp": 2000.0,
+    "vs": 1150.0,
+    "density": 2000.0
+  },
+  "time": {
+    "nstep": 2501,
+    "dt": 0.003,
+    "scheme": "rk4"
+  },
+  "source": {
+    "x": 1200.0,
+    "y": 1200.0,
+    "f0": 10.0,
+    "t0": 0.1,
+    "factor": 1.0e4,
+    "angle": 90.0,
+    "type": "ricker"
+  },
+  "pml": {
+    "use_pml_xmin": true,
+    "use_pml_xmax": true,
+    "use_pml_ymin": true,
+    "use_pml_ymax": true,
+    "npoints_pml": 10,
+    "npower": 2.0,
+    "k_max_pml": 7.0,
+    "alpha_max_pml": 31.41592653589793,
+    "rcoef": 0.00001,
+    "type": "adepml"
+  },
+  "receivers": [
+    {"x": 0.0, "y": 50.0},
+    {"x": 600.0, "y": 50.0},
+    {"x": 1200.0, "y": 50.0},
+    {"x": 1800.0, "y": 50.0},
+    {"x": 2400.0, "y": 50.0}
+  ],
+  "output": {
+    "output_dir": "./output",
+    "snapshot_interval": 200,
+    "snapshot_format": "binary",
+    "save_seismograms": true,
+    "seismogram_format": "ascii"
+  }
+}

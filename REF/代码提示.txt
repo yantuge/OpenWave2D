@@ -1,0 +1,107 @@
+**角色设定 (Role):**
+你是一位拥有15年以上经验的C++系统架构师与HPC（高性能计算）专家，精通C++17/20标准、现代CMake、Fortran 2008标准以及C++/Fortran混合编程。你擅长编写清晰、模块化、高性能且易于维护的代码。
+
+**核心任务 (Goal):**
+你的任务是根据以下详细的架构蓝图，逐步实现一个名为`openWave2D`的高性能地震波模拟器。该项目采用C++/Fortran混合编程模型，其中C++作为主控层，Fortran作为核心计算引擎。
+
+**架构蓝图 (Architectural Blueprint):**
+
+**1. 核心架构：C++ 控制器 + Fortran 引擎**
+
+  * **C++ 控制器**: 负责配置解析(JSON)、内存管理(RAII)、数据I/O、一次性初始化（PML剖面）、震源波形计算和主时间循环的调度。
+  * **Fortran 引擎**: 负责执行单次时间步的、计算密集型的数值更新。它应该是无状态的，并通过C兼容接口被C++调用。
+
+**2. 项目目录结构**
+请严格按照以下结构创建所有文件和目录：
+
+```
+SeismicHybrid/
+├── build/
+├── config/
+│   └── elastic_homogeneous.json
+├── fortran/
+│   └── seismic_kernels.f90
+├── include/
+│   └── seismic/
+│       ├── core/
+│       │   ├── Config.hpp
+│       │   ├── Grid.hpp
+│       │   └── Types.hpp
+│       ├── io/
+│       │   ├── ModelLoader.hpp
+│       │   ├── Recorder.hpp
+│       │   └── Writer.hpp
+│       ├── initializers/
+│       │   └── PMLInitializer.hpp
+│       ├── sources/
+│       │   ├── SourcePolicies.hpp
+│       │   └── SourceTimeFunction.hpp
+│       └── main/
+│           └── Dispatcher.hpp
+├── src/
+│   └── (与include/对应的.cpp文件)
+├── CMakeLists.txt
+└── README.md
+```
+
+**3. 详细实现步骤 (Implementation Steps):**
+
+**步骤一：实现C++核心数据结构 (`/include/seismic/core/`)**
+
+1.  **`Types.hpp`**: 定义 `using Real = double;`。
+2.  **`Config.hpp`**: 定义`SimulationConfig`结构体，包含`GridConfig`, `ModelConfig`, `TimeConfig`, `SourceConfig`, `PMLConfig`等子结构。并提供一个静态方法 `SimulationConfig from_json(const nlohmann::json& j);`。
+3.  **`Grid.hpp` & `Grid.cpp`**:
+      * 实现`Grid`类，其构造函数根据`GridConfig`分配内存。
+      * 内部使用`std::vector<Real>`存储所有物理场和PML剖面数组。
+      * **[关键约束]** 提供列主序（Column-Major）的二维访问器，例如 `Real& vp(int i, int j)` 实现为 `m_vp_data[j * m_nx + i]`。
+      * 提供裸指针访问函数，如 `Real* get_vp_ptr();`，用于传递给Fortran。
+
+**步骤二：重构Fortran计算引擎 (`/fortran/seismic_kernels.f90`)**
+
+  * 将2个原始的Fortran程序重构为2个独立的`SUBROUTINE`，并放入`seismic_kernels.f90`模块中。
+  * 每个子程序都必须使用`USE, INTRINSIC :: iso_c_binding`并提供`BIND(C, name="...")` C接口。
+  * 每个子程序只执行**单次时间步**计算，所有状态（参数、剖面、场数据）都必须通过参数传递。
+  * **接口规范示例 (`elastic_step_c`)**:
+      * **C接口名**: `"elastic_step_c"`
+      * **输入参数**:
+          * 控制参数: `nx, ny, dt, it` (均为`INTEGER(c_int), VALUE`或`REAL(c_double), VALUE`)。
+          * 震源参数: `isource, jsource` (`INTEGER(c_int), VALUE`), `force_x, force_y` (`REAL(c_double), VALUE`)。
+          * 预计算剖面: `d_x(:), K_x(:)`等 (`REAL(c_double), INTENT(IN)`)。
+      * **输入/输出参数**:
+          * 动态场: `vx(:,:), vy(:,:), sigmaxx(:,:)`等 (`REAL(c_double), INTENT(INOUT)`)。
+
+**步骤三：实现C++功能模块**
+
+1.  **PML初始化器 (`/initializers/PMLInitializer.hpp` & `.cpp`)**:
+      * 创建`initialize_pml`分派函数。
+      * 内部实现`compute_cpml_profiles`和`compute_adepml_profiles`，将原始Fortran代码中的PML剖面计算逻辑移植到此，计算结果存入`Grid`对象。
+2.  **模型加载器 (`/io/ModelLoader.hpp` & `.cpp`)**:
+      * 创建`load_model`分派函数，根据`config.model.type`调用不同构建器。
+      * 实现`build_homogeneous_model`：使用`std::fill`或`assign`填充`Grid`中的介质参数。
+      * 实现`load_model_from_binary`：使用`std::ifstream`从二进制文件高效读取数据到`Grid`的内存中。
+3.  **震源时间函数 (`/sources/`)**:
+      * 在`SourcePolicies.hpp`中，为`Ricker` 、`FirstDerivative` 等波形创建策略类，每个类包含一个静态方法`static double get_value(double time, const SourceConfig& cfg);`。
+      * 在`SourceTimeFunction.hpp`中，创建一个工厂函数`calculate_source_amplitude`，根据配置分派到正确的策略。
+4.  **数据输出模块 (`/io/Recorder.hpp`, `/io/Writer.hpp`)**:
+      * 实现`SeismogramRecorder`类，在每个时间步结束后从`Grid`中采样接收点数据并暂存到内存中，在模拟结束后写入文件。
+      * 实现`save_snapshot`函数，根据JSON配置中的间隔，将`Grid`中的完整二维场数据写入二进制或SU格式文件。
+
+**步骤四：实现C++主控流程与构建**
+
+1.  **调度器 (`/main/Dispatcher.hpp` & `.cpp`)**:
+      * 实现`run_simulation`函数，该函数包含**主时间循环**。
+      * 在循环开始前，调用初始化模块和加载器。
+      * 在循环内部：
+        a.  计算当前时刻`t`。
+        b.  调用震源模块计算`force_x`, `force_y`。
+        c.  根据配置，调用相应的Fortran `_step_c`函数，传递所有必要参数和指针。
+        d.  调用I/O模块记录地震图和（根据间隔）保存快照。
+2.  **主入口 (`/main/main.cpp`)**: 实现`main`函数，负责解析命令行参数（JSON路径），调用`run_simulation`。
+3.  **构建脚本 (`CMakeLists.txt`)**:
+      * 使用`project(SeismicHybrid CXX Fortran)`启用双语言支持。
+      * 使用`add_library(seismic_kernels STATIC ...)`编译Fortran代码。
+      * 使用`add_executable(SeismicHybrid ...)`编译C++代码。
+      * 使用`target_link_libraries(SeismicHybrid PRIVATE seismic_kernels)`将两者链接。
+
+**最终交付物 (Final Deliverable):**
+一个功能完整的、可通过JSON配置驱动的C++/Fortran混合架构地震波模拟器。该模拟器应具备清晰的模块划分、高性能的计算核心和灵活的扩展能力。请在代码中添加必要的注释以解释关键逻辑。
