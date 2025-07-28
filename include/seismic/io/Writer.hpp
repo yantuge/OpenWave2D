@@ -32,6 +32,16 @@ void save_snapshot_su(const Grid& grid, const OutputConfig& output_config,
                       Index it, const std::string& component);
 
 /**
+ * @brief Save velocity snapshot to SU format matching original Fortran code
+ * @param grid Current grid state
+ * @param output_config Output configuration
+ * @param it Current time step
+ * @param component Component to save ("vx" or "vy")
+ */
+void save_snapshot_su_fortran_style(const Grid& grid, const OutputConfig& output_config,
+                                    Index it, const std::string& component);
+
+/**
  * @brief Write seismogram data in ASCII format
  * @param seismograms 2D vector of seismogram data [receiver][time]
  * @param filename Output filename

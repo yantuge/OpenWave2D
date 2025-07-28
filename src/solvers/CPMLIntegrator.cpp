@@ -12,9 +12,9 @@ void CPMLIntegrator::step(Grid& grid,
     
     const Real current_time = it * dt;
     
-    // 计算震源在网格中的位置索引
-    const Index isource = static_cast<Index>(source_config.x / grid.deltax());
-    const Index jsource = static_cast<Index>(source_config.y / grid.deltay());
+    // 计算震源在网格中的位置索引 (转换为Fortran 1-based索引)
+    const Index isource = static_cast<Index>(source_config.x / grid.deltax()) + 1;
+    const Index jsource = static_cast<Index>(source_config.y / grid.deltay()) + 1;
     
     // 计算当前时间步的震源力
     Real force_x, force_y;

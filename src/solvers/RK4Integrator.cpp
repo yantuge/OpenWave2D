@@ -16,9 +16,9 @@ void RK4Integrator::step(Grid& grid,
     
     const Real current_time = it * dt;
     
-    // 计算震源在网格中的位置索引
-    const Index isource = static_cast<Index>(source_config.x / grid.deltax());
-    const Index jsource = static_cast<Index>(source_config.y / grid.deltay());
+    // 计算震源在网格中的位置索引 (转换为Fortran 1-based索引)
+    const Index isource = static_cast<Index>(source_config.x / grid.deltax()) + 1;
+    const Index jsource = static_cast<Index>(source_config.y / grid.deltay()) + 1;
     
     // 备份当前状态以进行RK4计算
     // 这是RK4算法的第一步：保存初始状态

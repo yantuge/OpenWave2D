@@ -20,13 +20,16 @@ class SeismogramRecorder {
 public:
     /**
      * @brief Constructor
-     * @param receivers Receiver configuration
-     * @param grid_config Grid configuration for coordinate conversion
+     * @param receiver_config Single receiver configuration
      * @param nstep Total number of time steps
      */
-    SeismogramRecorder(const ReceiverConfig& receivers, 
-                      const GridConfig& grid_config,
-                      Index nstep);
+    SeismogramRecorder(const ReceiverConfig& receiver_config, Index nstep);
+
+    /**
+     * @brief Initialize receiver locations based on grid configuration
+     * @param grid_config Grid configuration for coordinate conversion
+     */
+    void initialize(const GridConfig& grid_config);
 
     /**
      * @brief Record current time step
@@ -43,6 +46,32 @@ public:
     void save_seismograms(const OutputConfig& output_config, Real dt) const;
 
 private:
+    /**
+     * @brief Save seismograms in Fortran-style ASCII format (one file per receiver)
+     * @param output_config Output configuration
+     * @param dt Time step size
+     */
+    void save_seismograms_fortran_style(const OutputConfig& output_config, Real dt) const;
+
+    /**
+     * @brief Write seismograms in ASCII format
+     * @param seismograms Seismogram data
+     * @param filename Output filename
+     * @param dt Time step size
+     */
+    void write_seismograms_ascii(const std::vector<std::vector<Real>>& seismograms, 
+                                const std::string& filename, Real dt) const;
+
+    /**
+     * @brief Write seismograms in SU binary format
+     * @param seismograms Seismogram data
+     * @param filename Output filename
+     * @param dt Time step size
+     */
+    void write_seismograms_su(const std::vector<std::vector<Real>>& seismograms, 
+                             const std::string& filename, Real dt) const;
+
+private:
     struct ReceiverLocation {
         Index i, j;    ///< Grid indices
         Real x, y;     ///< Physical coordinates
@@ -52,10 +81,6 @@ private:
     std::vector<std::vector<Real>> m_seismograms_vx;  ///< Vx seismograms
     std::vector<std::vector<Real>> m_seismograms_vy;  ///< Vy seismograms
     Index m_nstep;
-    
-    /// Convert physical coordinates to grid indices
-    void compute_receiver_locations(const ReceiverConfig& receivers, 
-                                   const GridConfig& grid_config);
 };
 
 } // namespace seismic

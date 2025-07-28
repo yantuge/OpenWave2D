@@ -47,8 +47,8 @@
   "output": {
     "output_dir": "./output",
     "snapshot_interval": 200,
-    "snapshot_format": "binary",
+    "snapshot_format": "su",
     "save_seismograms": true,
-    "seismogram_format": "ascii"
+    "seismogram_format": "fortran"
   }
 }

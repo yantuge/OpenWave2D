@@ -46,7 +46,8 @@ void run_simulation(const SimulationConfig& config) {
         }
         
         // Setup seismogram recorder
-        SeismogramRecorder recorder(config.receivers, config.grid, config.time.nstep);
+        SeismogramRecorder recorder(config.receivers, config.time.nstep);
+        recorder.initialize(config.grid);
         
         // Check Courant stability condition
         Real cp_max = 0.0;
