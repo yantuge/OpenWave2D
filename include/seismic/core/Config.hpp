@@ -68,6 +68,8 @@ struct PMLConfig {
     Real alpha_max_pml; ///< Maximum PML alpha value
     Real rcoef;         ///< Reflection coefficient
     std::string type;   ///< PML type: "cpml", "adepml"
+    Real epsn;          ///< ADE-PML coefficient epsilon_n (default: 0.25)
+    Real epsn1;         ///< ADE-PML coefficient epsilon_n1 (default: 0.75)
 };
 
 /// Receiver configuration

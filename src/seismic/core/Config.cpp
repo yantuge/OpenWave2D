@@ -72,6 +72,9 @@ SimulationConfig SimulationConfig::from_json(const nlohmann::json& j) {
                                                   2.0 * 3.141592653589793 * (config.source.f0 / 2.0));
         config.pml.rcoef = pml_json.value("rcoef", 0.001);
         config.pml.type = pml_json.value("type", "cpml");
+        // ADE-PML specific parameters
+        config.pml.epsn = pml_json.value("epsn", 0.25);
+        config.pml.epsn1 = pml_json.value("epsn1", 0.75);
     }
     
     // Parse receiver configuration

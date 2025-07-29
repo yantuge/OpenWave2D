@@ -9,7 +9,7 @@
 namespace seismic {
 
 SeismogramRecorder::SeismogramRecorder(const ReceiverConfig& receiver_config, Index nstep) 
-    : m_nstep(nstep) {
+    : m_nstep(nstep), m_recording_mode(RecordingMode::FOUR_POINT_AVG) {  // Default to 4-point average
     // 计算接收器数量（x和y位置数组中较小的那个）
     Size num_receivers = std::min(receiver_config.x_positions.size(), receiver_config.y_positions.size());
     
@@ -45,23 +45,37 @@ void SeismogramRecorder::initialize(const GridConfig& grid_config) {
     }
 }
 
+void SeismogramRecorder::set_recording_mode(const std::string& solver_type) {
+    if (solver_type == "cpml") {
+        m_recording_mode = RecordingMode::SINGLE_POINT;
+    } else {
+        m_recording_mode = RecordingMode::FOUR_POINT_AVG;  // Default for RK4/ADE-PML
+    }
+}
+
 void SeismogramRecorder::record_time_step(const Grid& grid, Index it) {
     for (Size r = 0; r < m_receivers.size(); ++r) {
         const Index i = m_receivers[r].i;
         const Index j = m_receivers[r].j;
         
         if (it < m_nstep) {
-            // 使用原始Fortran代码的4点平均方法 (只对vx应用)
-            // vx使用4点平均: (vx(i,j) + vx(i+1,j) + vx(i,j+1) + vx(i+1,j+1))/4.0
-            if (i + 1 < grid.nx() && j + 1 < grid.ny()) {
-                m_seismograms_vx[r][it] = (grid.vx(i, j) + grid.vx(i+1, j) + 
-                                          grid.vx(i, j+1) + grid.vx(i+1, j+1)) / 4.0;
+            if (m_recording_mode == RecordingMode::FOUR_POINT_AVG) {
+                // ADE-PML模式：使用原始Fortran代码的4点平均方法 (对vx应用)
+                // vx使用4点平均: (vx(i,j) + vx(i+1,j) + vx(i,j+1) + vx(i+1,j+1))/4.0
+                if (i + 1 < grid.nx() && j + 1 < grid.ny()) {
+                    m_seismograms_vx[r][it] = (grid.vx(i, j) + grid.vx(i+1, j) + 
+                                              grid.vx(i, j+1) + grid.vx(i+1, j+1)) / 4.0;
+                } else {
+                    m_seismograms_vx[r][it] = grid.vx(i, j);
+                }
+                
+                // vy直接使用单点值
+                m_seismograms_vy[r][it] = grid.vy(i, j);
             } else {
+                // CPML模式：使用单点采样
                 m_seismograms_vx[r][it] = grid.vx(i, j);
+                m_seismograms_vy[r][it] = grid.vy(i, j);
             }
-            
-            // vy直接使用单点值
-            m_seismograms_vy[r][it] = grid.vy(i, j);
         }
     }
 }

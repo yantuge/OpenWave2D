@@ -185,9 +185,9 @@ void compute_adepml_profiles(Grid& grid, const PMLConfig& config, Real quasi_cp_
     // RK4 coefficients matching the original Fortran implementation
     const Real rk41[4] = {0.0, 0.5, 0.5, 1.0};
     
-    // ADE-PML parameters (matching original Fortran code)
-    const Real epsn = 0.25;   // coefficient for ADE
-    const Real epsn1 = 0.75;  // coefficient for ADE
+    // ADE-PML parameters from configuration (matching original Fortran code)
+    const Real epsn = config.epsn;   // coefficient for ADE
+    const Real epsn1 = config.epsn1; // coefficient for ADE
     
     // Extended grid dimensions for ADE-PML (including ghost points)
     const Index nx_extended = grid.nx() + 8;  // -4 to nx+4

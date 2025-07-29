@@ -49,6 +49,15 @@ void run_simulation(const SimulationConfig& config) {
         SeismogramRecorder recorder(config.receivers, config.time.nstep);
         recorder.initialize(config.grid);
         
+        // Set recording mode based on PML type
+        // ADE-PML uses 4-point average (original Fortran behavior)
+        // CPML uses single point sampling  
+        if (config.pml.type == "adepml") {
+            recorder.set_recording_mode("rk4");  // 4-point average for ADE-PML
+        } else {
+            recorder.set_recording_mode("cpml");  // Single point for CPML
+        }
+        
         // Check Courant stability condition
         Real cp_max = 0.0;
         if (config.model.type == "homogeneous") {

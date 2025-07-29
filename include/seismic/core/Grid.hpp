@@ -48,22 +48,23 @@ public:
     }
 
     // Velocity field accessors (automatically choose correct grid size)
+    // Using column-major order to match Fortran: array[i * ny + j]
     Real& vx(Index i, Index j) { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;  // Convert from regular grid to extended grid
             const Index j_ext = j + 4;
-            return m_vx[j_ext * m_nx_extended + i_ext]; 
+            return m_vx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_vx[j * m_nx + i]; 
+            return m_vx[i * m_ny + j]; 
         }
     }
     const Real& vx(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_vx[j_ext * m_nx_extended + i_ext]; 
+            return m_vx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_vx[j * m_nx + i]; 
+            return m_vx[i * m_ny + j]; 
         }
     }
     
@@ -71,18 +72,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_vy[j_ext * m_nx_extended + i_ext]; 
+            return m_vy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_vy[j * m_nx + i]; 
+            return m_vy[i * m_ny + j]; 
         }
     }
     const Real& vy(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_vy[j_ext * m_nx_extended + i_ext]; 
+            return m_vy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_vy[j * m_nx + i]; 
+            return m_vy[i * m_ny + j]; 
         }
     }
     
@@ -90,42 +91,43 @@ public:
     Real& vx_extended(Index i, Index j) { 
         const Index i_ext = i + 4;  // Convert from regular grid to extended grid
         const Index j_ext = j + 4;
-        return m_vx[j_ext * m_nx_extended + i_ext]; 
+        return m_vx[i_ext * m_ny_extended + j_ext]; 
     }
     const Real& vx_extended(Index i, Index j) const { 
         const Index i_ext = i + 4;
         const Index j_ext = j + 4;
-        return m_vx[j_ext * m_nx_extended + i_ext]; 
+        return m_vx[i_ext * m_ny_extended + j_ext]; 
     }
     
     Real& vy_extended(Index i, Index j) { 
         const Index i_ext = i + 4;
         const Index j_ext = j + 4;
-        return m_vy[j_ext * m_nx_extended + i_ext]; 
+        return m_vy[i_ext * m_ny_extended + j_ext]; 
     }
     const Real& vy_extended(Index i, Index j) const { 
         const Index i_ext = i + 4;
         const Index j_ext = j + 4;
-        return m_vy[j_ext * m_nx_extended + i_ext]; 
+        return m_vy[i_ext * m_ny_extended + j_ext]; 
     }
 
     // Stress field accessors (automatically choose correct grid size)
+    // Using column-major order to match Fortran: array[i * ny + j]
     Real& sigmaxx(Index i, Index j) { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_sigmaxx[j_ext * m_nx_extended + i_ext]; 
+            return m_sigmaxx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_sigmaxx[j * m_nx + i]; 
+            return m_sigmaxx[i * m_ny + j]; 
         }
     }
     const Real& sigmaxx(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_sigmaxx[j_ext * m_nx_extended + i_ext]; 
+            return m_sigmaxx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_sigmaxx[j * m_nx + i]; 
+            return m_sigmaxx[i * m_ny + j]; 
         }
     }
     
@@ -133,18 +135,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_sigmayy[j_ext * m_nx_extended + i_ext]; 
+            return m_sigmayy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_sigmayy[j * m_nx + i]; 
+            return m_sigmayy[i * m_ny + j]; 
         }
     }
     const Real& sigmayy(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_sigmayy[j_ext * m_nx_extended + i_ext]; 
+            return m_sigmayy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_sigmayy[j * m_nx + i]; 
+            return m_sigmayy[i * m_ny + j]; 
         }
     }
     
@@ -152,43 +154,43 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_sigmaxy[j_ext * m_nx_extended + i_ext]; 
+            return m_sigmaxy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_sigmaxy[j * m_nx + i]; 
+            return m_sigmaxy[i * m_ny + j]; 
         }
     }
     const Real& sigmaxy(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_sigmaxy[j_ext * m_nx_extended + i_ext]; 
+            return m_sigmaxy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_sigmaxy[j * m_nx + i]; 
+            return m_sigmaxy[i * m_ny + j]; 
         }
     }
 
-    // Material property accessors
-    Real& vp(Index i, Index j) { return m_vp[j * m_nx + i]; }
-    const Real& vp(Index i, Index j) const { return m_vp[j * m_nx + i]; }
+    // Material property accessors - using column-major order
+    Real& vp(Index i, Index j) { return m_vp[i * m_ny + j]; }
+    const Real& vp(Index i, Index j) const { return m_vp[i * m_ny + j]; }
     
-    Real& vs(Index i, Index j) { return m_vs[j * m_nx + i]; }
-    const Real& vs(Index i, Index j) const { return m_vs[j * m_nx + i]; }
+    Real& vs(Index i, Index j) { return m_vs[i * m_ny + j]; }
+    const Real& vs(Index i, Index j) const { return m_vs[i * m_ny + j]; }
     
-    Real& density(Index i, Index j) { return m_density[j * m_nx + i]; }
-    const Real& density(Index i, Index j) const { return m_density[j * m_nx + i]; }
+    Real& density(Index i, Index j) { return m_density[i * m_ny + j]; }
+    const Real& density(Index i, Index j) const { return m_density[i * m_ny + j]; }
 
     // Anisotropic material properties
-    Real& c11(Index i, Index j) { return m_c11[j * m_nx + i]; }
-    const Real& c11(Index i, Index j) const { return m_c11[j * m_nx + i]; }
+    Real& c11(Index i, Index j) { return m_c11[i * m_ny + j]; }
+    const Real& c11(Index i, Index j) const { return m_c11[i * m_ny + j]; }
     
-    Real& c12(Index i, Index j) { return m_c12[j * m_nx + i]; }
-    const Real& c12(Index i, Index j) const { return m_c12[j * m_nx + i]; }
+    Real& c12(Index i, Index j) { return m_c12[i * m_ny + j]; }
+    const Real& c12(Index i, Index j) const { return m_c12[i * m_ny + j]; }
     
-    Real& c22(Index i, Index j) { return m_c22[j * m_nx + i]; }
-    const Real& c22(Index i, Index j) const { return m_c22[j * m_nx + i]; }
+    Real& c22(Index i, Index j) { return m_c22[i * m_ny + j]; }
+    const Real& c22(Index i, Index j) const { return m_c22[i * m_ny + j]; }
     
-    Real& c33(Index i, Index j) { return m_c33[j * m_nx + i]; }
-    const Real& c33(Index i, Index j) const { return m_c33[j * m_nx + i]; }
+    Real& c33(Index i, Index j) { return m_c33[i * m_ny + j]; }
+    const Real& c33(Index i, Index j) const { return m_c33[i * m_ny + j]; }
 
     // PML profile accessors (1D arrays)
     Real& d_x(Index i) { return m_d_x[i]; }
@@ -277,23 +279,23 @@ public:
     Real& b_y_half_rk4(Index rk_substep, Index j) { return m_b_y_half_rk4[rk_substep * m_ny_extended + j]; }
     const Real& b_y_half_rk4(Index rk_substep, Index j) const { return m_b_y_half_rk4[rk_substep * m_ny_extended + j]; }
 
-    // Memory variables for PML (2D arrays) - automatically choose correct grid size
+    // Memory variables for PML (2D arrays) - using column-major order
     Real& memory_dvx_dx(Index i, Index j) { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvx_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvx_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvx_dx[j * m_nx + i]; 
+            return m_memory_dvx_dx[i * m_ny + j]; 
         }
     }
     const Real& memory_dvx_dx(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvx_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvx_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvx_dx[j * m_nx + i]; 
+            return m_memory_dvx_dx[i * m_ny + j]; 
         }
     }
     
@@ -301,18 +303,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvx_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvx_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvx_dy[j * m_nx + i]; 
+            return m_memory_dvx_dy[i * m_ny + j]; 
         }
     }
     const Real& memory_dvx_dy(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvx_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvx_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvx_dy[j * m_nx + i]; 
+            return m_memory_dvx_dy[i * m_ny + j]; 
         }
     }
     
@@ -320,18 +322,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvy_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvy_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvy_dx[j * m_nx + i]; 
+            return m_memory_dvy_dx[i * m_ny + j]; 
         }
     }
     const Real& memory_dvy_dx(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvy_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvy_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvy_dx[j * m_nx + i]; 
+            return m_memory_dvy_dx[i * m_ny + j]; 
         }
     }
     
@@ -339,18 +341,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvy_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvy_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvy_dy[j * m_nx + i]; 
+            return m_memory_dvy_dy[i * m_ny + j]; 
         }
     }
     const Real& memory_dvy_dy(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dvy_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dvy_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dvy_dy[j * m_nx + i]; 
+            return m_memory_dvy_dy[i * m_ny + j]; 
         }
     }
     
@@ -358,18 +360,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmaxx_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmaxx_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmaxx_dx[j * m_nx + i]; 
+            return m_memory_dsigmaxx_dx[i * m_ny + j]; 
         }
     }
     const Real& memory_dsigmaxx_dx(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmaxx_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmaxx_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmaxx_dx[j * m_nx + i]; 
+            return m_memory_dsigmaxx_dx[i * m_ny + j]; 
         }
     }
     
@@ -377,18 +379,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmayy_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmayy_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmayy_dy[j * m_nx + i]; 
+            return m_memory_dsigmayy_dy[i * m_ny + j]; 
         }
     }
     const Real& memory_dsigmayy_dy(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmayy_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmayy_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmayy_dy[j * m_nx + i]; 
+            return m_memory_dsigmayy_dy[i * m_ny + j]; 
         }
     }
     
@@ -396,18 +398,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmaxy_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmaxy_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmaxy_dx[j * m_nx + i]; 
+            return m_memory_dsigmaxy_dx[i * m_ny + j]; 
         }
     }
     const Real& memory_dsigmaxy_dx(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmaxy_dx[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmaxy_dx[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmaxy_dx[j * m_nx + i]; 
+            return m_memory_dsigmaxy_dx[i * m_ny + j]; 
         }
     }
     
@@ -415,18 +417,18 @@ public:
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmaxy_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmaxy_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmaxy_dy[j * m_nx + i]; 
+            return m_memory_dsigmaxy_dy[i * m_ny + j]; 
         }
     }
     const Real& memory_dsigmaxy_dy(Index i, Index j) const { 
         if (m_use_extended_grid) {
             const Index i_ext = i + 4;
             const Index j_ext = j + 4;
-            return m_memory_dsigmaxy_dy[j_ext * m_nx_extended + i_ext]; 
+            return m_memory_dsigmaxy_dy[i_ext * m_ny_extended + j_ext]; 
         } else {
-            return m_memory_dsigmaxy_dy[j * m_nx + i]; 
+            return m_memory_dsigmaxy_dy[i * m_ny + j]; 
         }
     }
 

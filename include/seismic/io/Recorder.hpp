@@ -19,6 +19,14 @@ namespace seismic {
 class SeismogramRecorder {
 public:
     /**
+     * @brief Recording modes for different solvers
+     */
+    enum class RecordingMode {
+        SINGLE_POINT,    ///< Single point sampling (for CPML)
+        FOUR_POINT_AVG   ///< 4-point average (for ADE-PML)
+    };
+
+    /**
      * @brief Constructor
      * @param receiver_config Single receiver configuration
      * @param nstep Total number of time steps
@@ -30,6 +38,12 @@ public:
      * @param grid_config Grid configuration for coordinate conversion
      */
     void initialize(const GridConfig& grid_config);
+
+    /**
+     * @brief Set recording mode based on solver type
+     * @param solver_type Solver type ("cpml" or "rk4")
+     */
+    void set_recording_mode(const std::string& solver_type);
 
     /**
      * @brief Record current time step
@@ -81,6 +95,7 @@ private:
     std::vector<std::vector<Real>> m_seismograms_vx;  ///< Vx seismograms
     std::vector<std::vector<Real>> m_seismograms_vy;  ///< Vy seismograms
     Index m_nstep;
+    RecordingMode m_recording_mode;  ///< Recording mode (single point vs 4-point average)
 };
 
 } // namespace seismic

@@ -1,0 +1,59 @@
+{
+    "grid": {
+        "nx": 401,
+        "ny": 401,
+        "deltax": 0.000625,
+        "deltay": 0.000625
+    },
+    "time": {
+        "dt": 5e-8,
+        "nstep": 3000,
+        "scheme": "cpml"
+    },
+    "model": {
+        "type": "anisotropic",
+        "c11": 4e10,
+        "c12": 3.8e10,
+        "c22": 2e11,
+        "c33": 2e10,
+        "density": 4000.0
+    },
+    "source": {
+        "x": 0.125,
+        "y": 0.125,
+        "f0": 200000.0,
+        "t0": 6e-6,
+        "factor": 1e7,
+        "angle": 0.0,
+        "type": "first_derivative_gaussian"
+    },
+    "pml": {
+        "use_pml_xmin": true,
+        "use_pml_xmax": true,
+        "use_pml_ymin": true,
+        "use_pml_ymax": true,
+        "npoints_pml": 10,
+        "npower": 2.0,
+        "k_max_pml": 1.0,
+        "alpha_max_pml": 628318.5307179587,
+        "rcoef": 0.001,
+        "type": "cpml"
+    },
+    "receivers": [
+        {"x": 0.05, "y": 0.125},
+        {"x": 0.1, "y": 0.125},
+        {"x": 0.15, "y": 0.125},
+        {"x": 0.2, "y": 0.125}
+    ],
+    "output": {
+        "output_dir": "./build/output",
+        "snapshot_interval": 100,
+        "snapshot_format": "su",
+        "save_seismograms": true,
+        "seismogram_format": "dat"
+    },
+    "solver": {
+        "type": "cpml",
+        "use_eighth_order": false
+    }
+}
