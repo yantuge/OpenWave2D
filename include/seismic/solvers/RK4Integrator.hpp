@@ -72,6 +72,22 @@ private:
                                         const SourceConfig& source_config,
                                         Real& force_x, 
                                         Real& force_y) const;
+    
+    /**
+     * @brief 执行RK4积分的累加步骤
+     * @param grid 网格对象
+     * @param source_config 震源配置
+     * @param dt 时间步长
+     * @param rk_substep RK4子步骤编号(1-4)
+     * @param force_x X方向震源力
+     * @param force_y Y方向震源力
+     */
+    void perform_rk4_accumulation(Grid& grid, 
+                                 const SourceConfig& source_config,
+                                 Real dt, 
+                                 int rk_substep,
+                                 Real force_x, 
+                                 Real force_y) const;
 };
 
 } // namespace seismic

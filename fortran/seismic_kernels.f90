@@ -344,22 +344,19 @@ contains
         enddo
         
         ! Apply RK4 updates to the wave fields
+        ! Store computed derivatives in dvx(1,:,:), dvy(1,:,:), etc.
+        ! These will be used by C++ to perform the RK4 accumulation
+        ! DO NOT update vx, vy, sigmaxx, sigmayy, sigmaxy here!
         do j = 1, ny
             do i = 1, nx
-                vx(i,j) = dvx(3,i,j) + dt_rk * dvx(1,i,j)
-                vy(i,j) = dvy(3,i,j) + dt_rk * dvy(1,i,j)
-                sigmaxx(i,j) = dsigmaxx(3,i,j) + dt_rk * dsigmaxx(1,i,j)
-                sigmayy(i,j) = dsigmayy(3,i,j) + dt_rk * dsigmayy(1,i,j)
-                sigmaxy(i,j) = dsigmaxy(3,i,j) + dt_rk * dsigmaxy(1,i,j)
+                ! Store the computed derivatives for RK4 accumulation in C++
+                ! dvx(1,i,j), dvy(1,i,j), etc. already contain the computed derivatives
+                ! from the main computation loop above
             enddo
         enddo
         
-        ! Add the source (force vector located at a given grid point)
-        if (isource >= 1 .and. isource <= nx .and. jsource >= 1 .and. jsource <= ny) then
-            rho_half_x_half_y = rho(isource,jsource)
-            vx(isource,jsource) = vx(isource,jsource) + force_x * dt_rk / rho_half_x_half_y
-            vy(isource,jsource) = vy(isource,jsource) + force_y * dt_rk / rho_half_x_half_y
-        endif
+        ! Note: Source addition is now handled in C++ RK4Integrator
+        ! to maintain proper RK4 time integration
         
     end subroutine adepml_rk4_step_c
 
