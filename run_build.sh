@@ -17,16 +17,25 @@ NC='\033[0m' # No Color
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
 
-# 系统检测
+# 系统检测 - Linux专用
 detect_system() {
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         SYSTEM="Linux"
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        SYSTEM="macOS"
-    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
-        SYSTEM="Windows"
+        # 检测具体发行版
+        if [ -f /etc/os-release ]; then
+            . /etc/os-release
+            DISTRO="$NAME"
+        elif [ -f /etc/redhat-release ]; then
+            DISTRO=$(cat /etc/redhat-release)
+        elif [ -f /etc/debian_version ]; then
+            DISTRO="Debian $(cat /etc/debian_version)"
+        else
+            DISTRO="Unknown Linux"
+        fi
     else
-        SYSTEM="Unknown"
+        echo -e "${RED}错误: 此脚本仅支持Linux系统${NC}"
+        echo "当前系统类型: $OSTYPE"
+        exit 1
     fi
 }
 
@@ -44,27 +53,48 @@ detect_build_tool() {
     fi
 }
 
-# 检测编译器
+# 检测编译器 - Linux优化版
 detect_compiler() {
-    # 检测C++编译器
-    if command -v g++ &> /dev/null; then
+    # 检测C++编译器（按优先级排序）
+    if [[ -n "$CXX" ]]; then
+        CXX_COMPILER="$CXX"
+        echo -e "${YELLOW}使用环境变量指定的C++编译器: $CXX_COMPILER${NC}"
+    elif command -v g++-11 &> /dev/null; then
+        CXX_COMPILER="g++-11"
+    elif command -v g++-10 &> /dev/null; then
+        CXX_COMPILER="g++-10"
+    elif command -v g++ &> /dev/null; then
         CXX_COMPILER="g++"
     elif command -v clang++ &> /dev/null; then
         CXX_COMPILER="clang++"
     else
-        echo -e "${YELLOW}警告: 未找到C++编译器，使用系统默认${NC}"
-        CXX_COMPILER=""
+        echo -e "${RED}错误: 未找到C++编译器${NC}"
+        echo "请手动安装 g++ 或 clang++"
+        exit 1
     fi
     
     # 检测Fortran编译器
-    if command -v gfortran &> /dev/null; then
+    if [[ -n "$FC" ]]; then
+        FORTRAN_COMPILER="$FC"
+        echo -e "${YELLOW}使用环境变量指定的Fortran编译器: $FORTRAN_COMPILER${NC}"
+    elif command -v gfortran-11 &> /dev/null; then
+        FORTRAN_COMPILER="gfortran-11"
+    elif command -v gfortran-10 &> /dev/null; then
+        FORTRAN_COMPILER="gfortran-10"
+    elif command -v gfortran &> /dev/null; then
         FORTRAN_COMPILER="gfortran"
     elif command -v ifort &> /dev/null; then
         FORTRAN_COMPILER="ifort"
     else
-        echo -e "${YELLOW}警告: 未找到Fortran编译器，使用系统默认${NC}"
-        FORTRAN_COMPILER=""
+        echo -e "${RED}错误: 未找到Fortran编译器${NC}"
+        echo "请手动安装 gfortran"
+        exit 1
     fi
+    
+    # 显示编译器版本信息
+    echo -e "${BLUE}编译器信息:${NC}"
+    $CXX_COMPILER --version | head -1
+    $FORTRAN_COMPILER --version | head -1
 }
 
 # 帮助函数
@@ -125,19 +155,18 @@ configure_project() {
     # 检查是否有CMake
     if ! command -v cmake &> /dev/null; then
         echo -e "${RED}错误: 未找到CMake，请先安装CMake${NC}"
-        echo "Ubuntu/Debian: sudo apt-get install cmake"
-        echo "CentOS/RHEL: sudo yum install cmake 或 sudo dnf install cmake"
-        echo "Arch Linux: sudo pacman -S cmake"
         exit 1
     fi
     
     # 显示系统信息
     echo -e "${YELLOW}系统信息:${NC}"
     echo "  操作系统: $SYSTEM"
+    echo "  发行版: $DISTRO"
     echo "  构建工具: $BUILD_TOOL"
-    echo "  C++编译器: ${CXX_COMPILER:-系统默认}"
-    echo "  Fortran编译器: ${FORTRAN_COMPILER:-系统默认}"
+    echo "  C++编译器: $CXX_COMPILER"
+    echo "  Fortran编译器: $FORTRAN_COMPILER"
     echo "  构建类型: $build_type"
+    echo ""
     
     # 准备CMake参数
     CMAKE_ARGS="-DCMAKE_BUILD_TYPE=$build_type"
@@ -167,7 +196,7 @@ configure_project() {
     echo -e "${GREEN}CMake配置完成${NC}"
 }
 
-# 构建项目
+# 构建项目 - Linux优化版
 build_project() {
     echo -e "${BLUE}构建项目...${NC}"
     cd "$BUILD_DIR"
@@ -182,28 +211,36 @@ build_project() {
     elif [ -f /proc/cpuinfo ]; then
         CORES=$(grep -c ^processor /proc/cpuinfo)
         echo -e "${YELLOW}从/proc/cpuinfo检测到 $CORES 个CPU核心${NC}"
-    elif command -v sysctl &> /dev/null && sysctl -n hw.ncpu &> /dev/null; then
-        # macOS
-        CORES=$(sysctl -n hw.ncpu)
-        echo -e "${YELLOW}macOS检测到 $CORES 个CPU核心${NC}"
     else
         CORES=2  # 默认值
         echo -e "${YELLOW}无法检测CPU核心数，使用默认值 $CORES${NC}"
     fi
     
+    # 内存检查 - 避免编译时内存不足
+    if [ -f /proc/meminfo ]; then
+        TOTAL_MEM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+        TOTAL_MEM_GB=$((TOTAL_MEM_KB / 1024 / 1024))
+        echo -e "${YELLOW}系统内存: ${TOTAL_MEM_GB}GB${NC}"
+        
+        # 如果内存小于4GB且CPU核心数大于2，限制并行数
+        if [ $TOTAL_MEM_GB -lt 4 ] && [ $CORES -gt 2 ]; then
+            CORES=2
+            echo -e "${YELLOW}内存不足，限制并行任务数为 $CORES${NC}"
+        fi
+    fi
+    
     # 根据构建工具执行构建
+    echo -e "${YELLOW}开始构建 (使用$CORES个并行任务)...${NC}"
+    
     if [[ "$BUILD_TOOL" == "ninja" ]]; then
-        echo -e "${YELLOW}使用Ninja进行构建...${NC}"
         ninja -j$CORES
     else
-        echo -e "${YELLOW}使用Make进行构建...${NC}"
         make -j$CORES
     fi
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}构建失败${NC}"
-        echo -e "${YELLOW}提示: 如果是内存不足，可以减少并行任务数:${NC}"
-        echo "  BUILD_JOBS=2 $0"
+        echo -e "${YELLOW}提示: 如果是内存不足，可以减少并行任务数: BUILD_JOBS=1 $0${NC}"
         exit 1
     fi
     
@@ -233,7 +270,7 @@ show_results() {
     fi
 }
 
-# 运行快速测试
+# 运行快速测试 - Linux增强版
 run_test() {
     echo -e "${BLUE}运行快速测试...${NC}"
     cd "$BUILD_DIR"
@@ -249,19 +286,58 @@ run_test() {
         chmod +x "./OpenWave2D"
     fi
     
-    # 运行版本检查或帮助信息
-    echo -e "${YELLOW}测试可执行文件...${NC}"
-    if ./OpenWave2D --help 2>/dev/null || ./OpenWave2D -h 2>/dev/null || ./OpenWave2D 2>&1 | head -5; then
-        echo -e "${GREEN}可执行文件测试通过${NC}"
-    else
-        echo -e "${YELLOW}警告: 可执行文件可能需要配置文件才能运行${NC}"
+    # 检查配置文件
+    if [ ! -f "./elastic_homogeneous.json" ]; then
+        echo -e "${YELLOW}警告: 配置文件不存在${NC}"
     fi
+    
+    # 创建测试输出目录
+    mkdir -p test_output test_seismograms test_snapshots
+    
+    # 运行基本测试
+    echo -e "${YELLOW}测试可执行文件...${NC}"
+    
+    # 测试1: 检查可执行文件基本信息
+    echo "1. 检查文件信息:"
+    file "./OpenWave2D"
+    echo ""
+    
+    # 测试2: 检查动态库依赖
+    echo "2. 检查动态库依赖:"
+    if command -v ldd &> /dev/null; then
+        ldd "./OpenWave2D" | grep -E "(not found|=>)" || echo "  依赖库检查完成"
+    fi
+    echo ""
+    
+    # 测试3: 运行帮助信息或简单测试
+    echo "3. 运行功能测试:"
+    if timeout 10 ./OpenWave2D --help 2>/dev/null; then
+        echo -e "${GREEN}帮助信息测试通过${NC}"
+    elif timeout 10 ./OpenWave2D -h 2>/dev/null; then
+        echo -e "${GREEN}帮助参数测试通过${NC}"
+    else
+        echo -e "${YELLOW}尝试运行基本测试...${NC}"
+        # 如果有配置文件，尝试运行很短时间
+        if [ -f "./elastic_homogeneous.json" ]; then
+            echo "使用配置文件进行快速测试..."
+            timeout 5 ./OpenWave2D elastic_homogeneous.json 2>&1 | head -10
+        else
+            echo "运行可执行文件基本检查..."
+            timeout 3 ./OpenWave2D 2>&1 | head -5
+        fi
+    fi
+    
+    echo -e "${GREEN}测试完成${NC}"
+    echo ""
+    echo -e "${BLUE}如需完整测试，请运行:${NC}"
+    echo "  cd $BUILD_DIR"
+    echo "  ./OpenWave2D elastic_homogeneous.json"
 }
 
 # 主逻辑
 main() {
     echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}      OpenWave2D 构建系统 (Linux)${NC}"
+    echo -e "${BLUE}    OpenWave2D Linux构建系统${NC}"
     echo -e "${BLUE}========================================${NC}"
     
     # 系统检测
