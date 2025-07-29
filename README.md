@@ -1,4 +1,4 @@
-# OpenWave2D - 2D Elastic Wave Simulation
+# OpenWave2D - 2D Elastic Wave Simulation (BUG...PROJECT IS DEVELOPING)
 
 A high-performance 2D seismic wave simulation framework using C++/Fortran hybrid architecture with PML absorbing boundaries.
 
